@@ -2,39 +2,48 @@ package main
 
 import (
 	"context"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
-var port string = ":8080"
-
-func HomePage(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html")
-}
-func LoginPage(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "login.html")
-}
+var port string = ":3000"
 
 func main() {
-	app := mux.NewRouter()
-	app.HandleFunc("/", HomePage)
-	app.HandleFunc("/form", LoginPage)
+	//Makes a router
+	r := gin.Default()
 
+	//Path handling
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Hi",
+		})
+	})
+
+	r.GET("/:name", func(c *gin.Context) {
+		name := c.Param("name")
+		c.String(200, "Hello %s", name)
+	})
+
+	r.GET("/HelloWorld", func(c *gin.Context) {
+		c.File("./index.html")
+	})
+
+	//Creates server object
 	srv := &http.Server{
 		Addr:    port,
-		Handler: app,
+		Handler: r,
 	}
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
+		//Starts server
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
